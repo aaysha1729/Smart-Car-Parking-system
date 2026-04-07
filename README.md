@@ -341,6 +341,12 @@ Here:
 5. Power the system using USB or an external supply.
 6. Test the setup by moving toy cars or objects near the sensors.
 
+## Project Report
+
+For detailed project documentation, methodology, observations, and results, refer to the full report:
+
+- [Smart Car Parking System Report](https://docs.google.com/document/d/1sM9pSUo001BN0gcx6zk4jW1RcdFPZvwZEO0hO-ka1dI/edit?tab=t.0)
+
 ## Contributing
 
 Suggestions and improvements are welcome. You can extend the project by improving the sensor logic, adding IoT support, or scaling it to support more parking slots.
