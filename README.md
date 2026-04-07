@@ -43,7 +43,7 @@ This project demonstrates practical hardware and software integration for embedd
 
 ### Prototype Setup
 
-![Smart Car Parking System Setup](images/setup.jpg)
+![Smart Car Parking System Setup](images/prototype-setup.jpg)
 
 ### Circuit Diagram
 
