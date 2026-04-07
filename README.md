@@ -121,6 +121,183 @@ Example library setup:
 #include <Servo.h>
 ```
 
+### Arduino Code
+
+```cpp
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+#include <Servo.h>
+
+LiquidCrystal_I2C lcd(0x27,16,2);
+Servo myservo;
+
+// Entry/Exit Sensors
+int IR_OUT = 2;
+int IR_IN  = 3;
+
+// Slot Sensors (SWAPPED 1 & 2)
+int SLOT1_SENSOR = 5;  // was 4
+int SLOT2_SENSOR = 4;  // was 5
+int SLOT3_SENSOR = 6;
+
+int totalSlots = 3;
+int Slot = 3;
+
+// Slot states
+int slot1 = HIGH;
+int slot2 = HIGH;
+int slot3 = HIGH;
+
+// Direction logic
+int lastSensor = 0;
+unsigned long lastTime = 0;
+const int timeout = 1500;
+
+unsigned long cooldown = 0;
+unsigned long gateCooldown = 0;
+
+void setup() {
+  Serial.begin(9600);
+
+  lcd.init();
+  lcd.backlight();
+
+  pinMode(IR_OUT, INPUT);
+  pinMode(IR_IN, INPUT);
+  pinMode(SLOT1_SENSOR, INPUT);
+  pinMode(SLOT2_SENSOR, INPUT);
+  pinMode(SLOT3_SENSOR, INPUT);
+
+  myservo.attach(9);
+
+  // Initial gate test
+  for(int pos = 100; pos >= 0; pos -= 5) {
+    myservo.write(pos);
+    delay(20);
+  }
+
+  delay(300);
+
+  for(int pos = 0; pos <= 100; pos += 5) {
+    myservo.write(pos);
+    delay(20);
+  }
+
+  lcd.setCursor(0,0);
+  lcd.print("PARKING SYSTEM");
+  lcd.setCursor(0,1);
+  lcd.print("INITIALIZING");
+  delay(2000);
+  lcd.clear();
+}
+
+void loop() {
+
+  int outside = digitalRead(IR_OUT);
+  int inside  = digitalRead(IR_IN);
+
+  // Read all REAL slots
+  slot1 = digitalRead(SLOT1_SENSOR);
+  slot2 = digitalRead(SLOT2_SENSOR);
+  slot3 = digitalRead(SLOT3_SENSOR);
+
+  // Calculate free slots
+  Slot = 0;
+  if (slot1 == HIGH) Slot++;
+  if (slot2 == HIGH) Slot++;
+  if (slot3 == HIGH) Slot++;
+
+  // PARKING FULL
+  if (outside == LOW && Slot == 0 && lastSensor == 0) {
+
+    lcd.setCursor(0,0);
+    lcd.print(" Parking Full ");
+    lcd.setCursor(0,1);
+    lcd.print("   SORRY :(   ");
+
+    while(digitalRead(IR_OUT) == LOW);
+    delay(800);
+    lcd.clear();
+    return;
+  }
+
+  // Gate control
+  if ((outside == LOW || inside == LOW) && millis() > gateCooldown) {
+    openGate();
+  }
+
+  // Direction detection
+  if (outside == LOW) {
+    processSensor(1);
+    while(digitalRead(IR_OUT) == LOW);
+  }
+
+  if (inside == LOW) {
+    processSensor(2);
+    while(digitalRead(IR_IN) == LOW);
+  }
+
+  // LCD display
+  lcd.setCursor(0,0);
+  lcd.print("Free:");
+  lcd.print(Slot);
+  lcd.print("   ");
+
+  lcd.setCursor(0,1);
+
+  lcd.print("S1:");
+  lcd.print(slot1 ? "E " : "F ");
+
+  lcd.print("S2:");
+  lcd.print(slot2 ? "E " : "F ");
+
+  lcd.print("S3:");
+  lcd.print(slot3 ? "E" : "F");
+}
+
+// Gate control
+void openGate() {
+
+  for(int pos = 100; pos >= 0; pos -= 5) {
+    myservo.write(pos);
+    delay(20);
+  }
+
+  delay(500);
+
+  for(int pos = 0; pos <= 100; pos += 5) {
+    myservo.write(pos);
+    delay(20);
+  }
+
+  gateCooldown = millis() + 1500;
+}
+
+// Direction logic
+void processSensor(int sensorID) {
+
+  if (millis() < cooldown) return;
+
+  if (millis() - lastTime > timeout) {
+    lastSensor = sensorID;
+    lastTime = millis();
+    return;
+  }
+
+  // ENTRY
+  if (lastSensor == 1 && sensorID == 2) {
+    cooldown = millis() + 1500;
+  }
+
+  // EXIT
+  else if (lastSensor == 2 && sensorID == 1) {
+    cooldown = millis() + 1500;
+  }
+
+  lastSensor = 0;
+}
+```
+
 ## Sample LCD Output
 
 ```text
